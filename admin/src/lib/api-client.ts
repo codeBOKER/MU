@@ -1,4 +1,5 @@
 import axios from "axios"
+import { devAutoLogin } from "@/lib/dev-auth"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8090"
 
@@ -25,6 +26,8 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (devAutoLogin) return Promise.reject(error)
+
       originalRequest._retry = true
 
       const refreshToken = localStorage.getItem("admin_refresh_token")

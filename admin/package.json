@@ -8,6 +8,8 @@
   },
   "scripts": {
     "dev": "vite",
+    "auth:off": "node scripts/dev-auth.mjs off",
+    "auth:on": "node scripts/dev-auth.mjs on",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

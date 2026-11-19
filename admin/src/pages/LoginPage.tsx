@@ -1,7 +1,8 @@
 import { useState } from "react"
-import { useNavigate, useLocation } from "react-router-dom"
+import { Navigate, useNavigate, useLocation } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { useAdminLogin } from "@/hooks/useAdminAuth"
+import { devAutoLogin } from "@/lib/dev-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -26,6 +27,8 @@ export function LoginPage() {
   const [error, setError] = useState(false)
 
   const from = location.state?.from?.pathname || "/"
+
+  if (devAutoLogin) return <Navigate to="/" replace />
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

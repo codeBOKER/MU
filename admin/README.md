@@ -28,6 +28,19 @@ npm install
 npm run dev              # http://localhost:5191 (port via VITE_PORT in .env)
 ```
 
+### Browse every page without logging in
+
+For local UI work, mint a long-lived dev JWT from `../core/.env` and let the SPA
+use it automatically — no login screen, no server change, no rebuild:
+
+```bash
+npm run auth:off         # writes VITE_DEV_* into .env.local, Vite reloads
+npm run auth:on          # clears those keys, login is required again
+```
+
+The command only touches `admin/.env.local` (gitignored); the core keeps its
+normal JWT checks. Refresh the browser after toggling.
+
 ## i18n
 
 The UI is fully bilingual (es/en) via `react-i18next` with JSON locales

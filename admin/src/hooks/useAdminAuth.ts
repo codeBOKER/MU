@@ -1,7 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import { apiClient } from "@/lib/api-client"
+import { devAutoLogin, devStubAdmin } from "@/lib/dev-auth"
 import type { AdminLoginResponse, AdminUser } from "@/types/api"
+
+const DEV_ADMIN: AdminUser = {
+  id: "00000000-0000-0000-0000-000000000001",
+  email: "dev@chasqui.local",
+  full_name: "Dev Admin",
+  role: "super_admin",
+  is_active: true,
+  created_at: new Date(0).toISOString(),
+  last_login_at: null,
+}
+
+const skipMe = devAutoLogin && devStubAdmin
 
 export function useAdminAuth() {
   return useQuery({
@@ -11,6 +24,8 @@ export function useAdminAuth() {
       return data
     },
     retry: false,
+    enabled: !skipMe,
+    initialData: skipMe ? DEV_ADMIN : undefined,
   })
 }
 
