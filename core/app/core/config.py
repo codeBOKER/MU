@@ -105,6 +105,7 @@ class Settings(BaseSettings):
     # /send with the same INTERNAL_API_KEY. Unset = sends from the admin
     # panel fail with a clear error for that channel.
     channel_whatsapp_send_url: str | None = None
+    channel_whatsapp_waha_send_url: str | None = None
     channel_telegram_send_url: str | None = None
     channel_web_send_url: str | None = None
 

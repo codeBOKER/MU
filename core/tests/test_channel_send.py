@@ -139,3 +139,20 @@ async def test_unreachable_gateway_maps_to_gateway_unreachable(monkeypatch, cont
     with pytest.raises(channel_send.ChannelSendError) as exc:
         await channel_send.send_message(contact, text="hola")
     assert exc.value.code == "GATEWAY_UNREACHABLE"
+
+
+async def test_hyphenated_channel_uses_env_safe_settings_key(monkeypatch):
+    contact = Contact(
+        channel="whatsapp-waha", external_id="51999000111@c.us", wa_id=None
+    )
+    monkeypatch.setattr(
+        settings, "channel_whatsapp_waha_send_url", "http://waha-gw:8003/send"
+    )
+    recorded = _stub_http(monkeypatch, FakeResponse(200, {"status": "sent"}))
+
+    await channel_send.send_message(contact, text="hola")
+
+    assert recorded[0]["url"] == "http://waha-gw:8003/send"
+    assert channel_send.send_url_env_name("whatsapp-waha") == (
+        "CHANNEL_WHATSAPP_WAHA_SEND_URL"
+    )

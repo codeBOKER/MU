@@ -1,0 +1,27 @@
+[project]
+name = "chasqui-whatsapp-waha"
+version = "0.1.0"
+description = "Chasqui WAHA (GOWS) WhatsApp gateway — self-hosted personal WhatsApp adapter"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.128.0",
+    "gunicorn>=23.0.0",
+    "httpx>=0.28.0",
+    "pydantic-settings>=2.12.0",
+    "sentry-sdk>=2.52.0",
+    "uvicorn[standard]>=0.40.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "respx>=0.21.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

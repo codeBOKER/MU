@@ -1,0 +1,66 @@
+# Kamal 2 deploy config — Chasqui WAHA WhatsApp gateway.
+# Placeholders to replace per project: registry username, server IP, hosts.
+# WAHA itself is deployed separately; this service only needs its URL/key.
+service: my-agent-whatsapp-waha
+
+# Name of the container image.
+image: your-username/my-agent-whatsapp-waha
+
+# Deploy to these servers.
+servers:
+  web:
+    hosts:
+      - 203.0.113.10 # your server IP
+
+registry:
+  username: your-username
+  password:
+    - DOCKER_REGISTRY_PASSWORD
+
+# Inject ENV variables into containers (secrets come from .kamal/secrets).
+# Remember to run `kamal env push` after making changes!
+env:
+  clear:
+    PORT: 8003
+    # Public/reachable WAHA API. Prefer an internal network/DNS name.
+    WAHA_BASE_URL: "http://waha:3000"
+    WAHA_SESSION: default
+    # Must be reachable FROM WAHA. Use https://waha-gw.example.com/webhook.
+    WAHA_WEBHOOK_URL: "https://waha-gw.example.com/webhook"
+    WAHA_AUTO_START_SESSION: true
+    WAHA_VOICE_CONVERT: true
+    # Where the core lives (the gateway POSTs /ingest there).
+    CORE_URL: "https://api.example.com"
+    # Durable cross-worker webhook dedup on the mounted volume.
+    WAHA_DEDUP_DB_PATH: /app/data/dedup.sqlite3
+  secret:
+    - WAHA_API_KEY
+    - WAHA_WEBHOOK_HMAC_KEY
+    # --- Gateway -> core shared secret (same value as the core's) ---
+    - INTERNAL_API_KEY
+    # --- Sentry (optional) — uncomment + add to .kamal/secrets to enable:
+    # - SENTRY_DSN
+
+volumes:
+  - "my-agent-waha-dedup:/app/data"
+
+ssh:
+  user: deploy
+
+builder:
+  arch: amd64
+
+proxy:
+  ssl: true
+  host: "waha-gw.example.com"
+  app_port: 8003
+  healthcheck:
+    path: /health
+
+aliases:
+  apps: server exec docker exec kamal-proxy kamal-proxy list
+  stats: server exec "docker stats --no-stream"
+  stats-live: server exec -i "docker stats"
+  ps: server exec "docker ps"
+  app-terminal: app exec -i "bash"
+  logs: app logs -f

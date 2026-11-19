@@ -57,6 +57,7 @@ def _no_dev_env(monkeypatch):
         "storage_secret_key",
         "storage_public_endpoint_url",
         "channel_whatsapp_send_url",
+        "channel_whatsapp_waha_send_url",
         "notify_webhook_url",
         "smtp_host",
         "smtp_user",

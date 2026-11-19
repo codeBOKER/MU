@@ -8,6 +8,7 @@ admin so the panel can explain WhatsApp's 24h window instead of a bare 502.
 """
 
 import logging
+import re
 
 import httpx
 
@@ -28,13 +29,26 @@ class ChannelSendError(Exception):
         self.message = message
 
 
+def _channel_setting_key(channel: str) -> str:
+    """Map a channel name to its settings/env-safe key.
+
+    Channel names may contain hyphens (e.g. ``whatsapp-waha``); settings fields
+    and env vars cannot, so both are normalized to lowercase snake_case.
+    """
+    return re.sub(r"[^a-z0-9]+", "_", channel.lower()).strip("_")
+
+
+def send_url_env_name(channel: str) -> str:
+    return f"CHANNEL_{_channel_setting_key(channel).upper()}_SEND_URL"
+
+
 def send_url_for(channel: str) -> str | None:
     """Resolve the gateway /send URL for a channel from settings.
 
     Convention: a `channel_<name>_send_url` settings field per channel —
     adding a channel is one .env var, zero core code paths.
     """
-    return getattr(settings, f"channel_{channel}_send_url", None)
+    return getattr(settings, f"channel_{_channel_setting_key(channel)}_send_url", None)
 
 
 def _error_from_response(response: httpx.Response) -> ChannelSendError:
@@ -68,7 +82,7 @@ async def send_message(
         raise ChannelSendError(
             "CHANNEL_NOT_CONFIGURED",
             f"No send URL configured for channel '{contact.channel}' "
-            f"(set CHANNEL_{contact.channel.upper()}_SEND_URL)",
+            f"(set {send_url_env_name(contact.channel)})",
         )
 
     payload = {

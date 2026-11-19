@@ -1,0 +1,8 @@
+.venv
+.env
+.kamal/secrets
+__pycache__
+*.pyc
+.pytest_cache
+data
+tests

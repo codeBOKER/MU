@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 // Unknown channels fall back to a neutral outline badge.
 const CHANNELS: Record<string, { Icon: IconType; token: string }> = {
   whatsapp: { Icon: SiWhatsapp, token: "--channel-whatsapp" },
+  "whatsapp-waha": { Icon: SiWhatsapp, token: "--channel-whatsapp" },
   telegram: { Icon: SiTelegram, token: "--channel-telegram" },
 }
 

@@ -1,18 +1,21 @@
 # One-command spin-up for collaborators (native local dev with psql + uv + npm
 # remains the primary workflow). Default `docker compose up` starts postgres +
 # core + admin. Channel gateways need credentials, so each is behind a profile:
-#   docker compose --profile gateway up    # both gateways
-#   docker compose --profile whatsapp up   # just WhatsApp (needs ./whatsapp/.env)
+#   docker compose --profile gateway up    # all channel gateways
+#   docker compose --profile whatsapp up   # just WhatsApp Cloud API (needs ./whatsapp/.env)
+#   docker compose --env-file whatsapp-waha/.env --profile whatsapp-waha up --build  # WhatsApp via WAHA/GOWS
 #   docker compose --profile telegram up   # just Telegram (needs ./telegram/.env)
 services:
   postgres:
     image: pgvector/pgvector:pg17
     environment:
-      POSTGRES_DB: chasqui
+      POSTGRES_DB: mu
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: aaba10a8b7
     ports:
-      - "5432:5432"
+      # 5432 is often taken by a host Postgres install; core uses the
+      # internal service port, so only the host-side mapping changes.
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./core/config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -60,17 +63,15 @@ services:
         condition: service_healthy
       storage:
         condition: service_started
+    env_file:
+      - ./core/.env
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: chasqui
-      JWT_SECRET_KEY: dev-secret-change-me
-      INTERNAL_API_KEY: devkey
       CORS_ORIGINS: "http://localhost:3000"
-      # LLM/embeddings — export GOOGLE_API_KEY on the host before `up`
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       # Media storage (ADR-003): core uploads via the docker network, but
       # presigned URLs must be browser-reachable → public endpoint override.
       STORAGE_ENDPOINT_URL: "http://storage:9000"
@@ -82,16 +83,16 @@ services:
       # when the matching gateway profile is up; sends fail with a clear error
       # otherwise.
       CHANNEL_WHATSAPP_SEND_URL: "http://whatsapp:8000/send"
+      CHANNEL_WHATSAPP_WAHA_SEND_URL: "http://whatsapp-waha:8003/send"
       CHANNEL_TELEGRAM_SEND_URL: "http://telegram:8001/send"
     command: sh -c "alembic upgrade head && gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8090"
     ports:
-      - "8090:8090"
+      # Override CORE_HOST_PORT if a local `make dev` core already uses 8090.
+      - "${CORE_HOST_PORT:-8090}:8090"
 
   admin:
     build:
       context: ./admin
-      args:
-        VITE_API_BASE_URL: "http://localhost:8090"
     depends_on:
       - core
     ports:
@@ -109,6 +110,43 @@ services:
       INTERNAL_API_KEY: devkey
     ports:
       - "8000:8000"
+
+  # Self-hosted WhatsApp via WAHA (GOWS engine — no Chromium).
+  # Pinned image: GOWS builds are tagged separately from the default engine.
+  # Dashboard/QR: http://localhost:3001/dashboard (admin / ${WAHA_DASHBOARD_PASSWORD})
+  waha:
+    image: devlikeapro/waha:gows-2026.10.1
+    profiles: ["gateway", "whatsapp-waha"]
+    environment:
+      WHATSAPP_DEFAULT_ENGINE: GOWS
+      WAHA_API_KEY: ${WAHA_API_KEY:-dev-waha-key}
+      WAHA_DASHBOARD_USERNAME: ${WAHA_DASHBOARD_USERNAME:-admin}
+      WAHA_DASHBOARD_PASSWORD: ${WAHA_DASHBOARD_PASSWORD:-dev-waha-dashboard}
+      WAHA_BASE_URL: "http://waha:3000"
+    ports:
+      - "3001:3000"
+    volumes:
+      - wahasessions:/app/.sessions
+
+  whatsapp-waha:
+    build: ./whatsapp-waha
+    profiles: ["gateway", "whatsapp-waha"]
+    depends_on:
+      - core
+      - waha
+    env_file:
+      - ./whatsapp-waha/.env
+    environment:
+      CORE_URL: "http://core:8090"
+      WAHA_BASE_URL: "http://waha:3000"
+      WAHA_API_KEY: ${WAHA_API_KEY:-dev-waha-key}
+      WAHA_WEBHOOK_URL: "http://whatsapp-waha:8003/webhook"
+      WAHA_WEBHOOK_HMAC_KEY: ${WAHA_WEBHOOK_HMAC_KEY:-dev-waha-hmac}
+      WAHA_DEDUP_DB_PATH: "/app/data/dedup.sqlite3"
+    ports:
+      - "8003:8003"
+    volumes:
+      - wahadedup:/app/data
 
   telegram:
     build: ./telegram
@@ -140,3 +178,5 @@ services:
 volumes:
   pgdata:
   storagedata:
+  wahasessions:
+  wahadedup:
