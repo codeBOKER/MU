@@ -10,6 +10,7 @@ import {
   LeadsPage,
   LoginPage,
   PromptPage,
+  SettingsPage,
   ToolsPage,
 } from "@/pages"
 
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
       { path: "conversations", element: <ConversationsPage /> },
       { path: "conversations/:contactId", element: <ConversationDetailPage /> },
       { path: "leads", element: <LeadsPage /> },
+      { path: "settings", element: <SettingsPage /> },
     ],
   },
 ])

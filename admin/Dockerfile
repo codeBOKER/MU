@@ -15,10 +15,6 @@ RUN npm ci && npm cache clean --force
 # Copiar el resto del código
 COPY . .
 
-# Build argument para la URL del API
-ARG VITE_API_BASE_URL=https://api.example.com
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-
 # Construir la aplicación para producción
 RUN npm run build
 
