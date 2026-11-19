@@ -5,4 +5,5 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS vector;
 
-GRANT ALL PRIVILEGES ON DATABASE mu TO postgres;
+-- The POSTGRES_USER below owns this database and is a superuser in the
+-- official image, so no extra GRANT is needed (the DB name is configurable).
