@@ -174,6 +174,7 @@
   },
   "conversations": {
     "title": "Conversations",
+    "sampleData": "Sample data",
     "subtitle": "Read-only inspection of every contact's thread.",
     "searchPlaceholder": "Search by name, phone or ID…",
     "empty": "No contacts yet.",
@@ -271,7 +272,15 @@
     "humanOperator": "Human Operator",
     "macroGreeting": "Hello! How can I assist you today?",
     "macroWait": "One moment please, checking this for you.",
-    "macroResolved": "Glad we could help! Feel free to reach out anytime."
+    "macroResolved": "Glad we could help! Feel free to reach out anytime.",
+    "tips": {
+      "title": "Did you know?",
+      "search": "Search by name, phone or ID to jump straight to a customer's thread.",
+      "humanHandoff": "When a conversation needs a human, hit \"Take over\" to reply as an operator — the bot steps back until you resume it.",
+      "whatsappWindow": "The WhatsApp 24h window is tracked for you. Once it closes, the customer must write first before you can reply.",
+      "quickReplies": "Type \"/\" in the composer to insert a canned response and answer common questions in a click.",
+      "keyboard": "Enter sends your reply; Shift + Enter adds a new line."
+    }
   },
   "leads": {
     "title": "Leads",

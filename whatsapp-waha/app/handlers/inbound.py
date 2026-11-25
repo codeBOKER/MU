@@ -47,15 +47,46 @@ def _wa_id(chat_id: str) -> str | None:
     @lid is an opaque linked-device identifier — extracting digits from it and
     calling that a phone number would corrupt identity. Keep wa_id null there.
     """
-    local, _, domain = chat_id.partition("@")
-    if domain.lower() in ("c.us", "s.whatsapp.net") and local.isdigit():
-        return local
+    if not isinstance(chat_id, str):
+        return None
+    val = chat_id.strip()
+    if "@" not in val:
+        digits = val.lstrip("+")
+        return digits if digits.isdigit() else None
+    local, _, domain = val.partition("@")
+    if domain.lower() in ("c.us", "s.whatsapp.net") and local.lstrip("+").isdigit():
+        return local.lstrip("+")
+    return None
+
+
+def _pn_from_payload(payload: dict) -> str | None:
+    data = _as_dict(payload.get("_data"))
+    for candidate in (
+        payload.get("pn"),
+        data.get("pn"),
+        payload.get("phoneNumber"),
+        data.get("phoneNumber"),
+    ):
+        if isinstance(candidate, str):
+            wa_id = _wa_id(candidate)
+            if wa_id:
+                return wa_id
     return None
 
 
 def _display_name(payload: dict) -> str | None:
     data = _as_dict(payload.get("_data"))
-    for candidate in (data.get("pushName"), payload.get("pushName")):
+    for candidate in (
+        data.get("pushName"),
+        data.get("notifyName"),
+        data.get("pushname"),
+        data.get("name"),
+        data.get("verifiedName"),
+        payload.get("pushName"),
+        payload.get("notifyName"),
+        payload.get("pushname"),
+        payload.get("name"),
+    ):
         if isinstance(candidate, str) and candidate.strip():
             return candidate.strip()
     return None
@@ -124,7 +155,7 @@ def normalize_message(event: dict) -> dict | None:
         "channel": CHANNEL,
         "contact": {
             "external_id": chat_id,
-            "wa_id": _wa_id(chat_id),
+            "wa_id": _wa_id(chat_id) or _pn_from_payload(payload),
             "display_name": _display_name(payload),
             "metadata": {
                 "waha_chat_id": chat_id,
@@ -161,6 +192,72 @@ async def _attach_media(payload: dict, event: dict, waha: WahaClient) -> None:
     payload["message"]["media_url"] = (
         f"data:{mime};base64,{base64.b64encode(data).decode()}"
     )
+
+
+async def _enrich_contact(payload: dict, event: dict, waha: WahaClient) -> None:
+    """Enrich contact with phone number (wa_id) and display_name if missing.
+
+    When WhatsApp identifies a chat via @lid, query WAHA's LID mapping and/or
+    contacts API to resolve the underlying phone number and profile name.
+    """
+    contact = payload.get("contact")
+    if not isinstance(contact, dict):
+        return
+    chat_id = contact.get("external_id")
+    if not isinstance(chat_id, str) or not chat_id:
+        return
+
+    # 1. Resolve phone number if missing and chat_id is @lid
+    if not contact.get("wa_id") and chat_id.lower().endswith("@lid"):
+        if hasattr(waha, "get_lid_pn"):
+            try:
+                pn = await waha.get_lid_pn(chat_id)
+                if pn:
+                    metadata = contact.setdefault("metadata", {})
+                    metadata["waha_pn"] = pn
+                    wa_id = _wa_id(pn)
+                    if wa_id:
+                        contact["wa_id"] = wa_id
+            except Exception as exc:
+                logger.warning("Failed to resolve LID %s: %s", chat_id, exc)
+
+    # 2. Resolve display_name and/or fallback wa_id via contacts API if needed
+    if not contact.get("display_name") or not contact.get("wa_id"):
+        if hasattr(waha, "get_contact"):
+            try:
+                contact_info = await waha.get_contact(chat_id)
+                pn = contact.get("metadata", {}).get("waha_pn")
+                if not contact_info and pn:
+                    contact_info = await waha.get_contact(pn)
+
+                if isinstance(contact_info, dict):
+                    # If wa_id is still missing, check if contact_info has it
+                    if not contact.get("wa_id"):
+                        num = (
+                            contact_info.get("number")
+                            or contact_info.get("pn")
+                            or contact_info.get("id")
+                        )
+                        if isinstance(num, str) and num:
+                            wa_id = _wa_id(num)
+                            if wa_id:
+                                contact["wa_id"] = wa_id
+
+                    # If display_name is missing, extract from contact_info
+                    if not contact.get("display_name"):
+                        for candidate in (
+                            contact_info.get("pushname"),
+                            contact_info.get("pushName"),
+                            contact_info.get("name"),
+                            contact_info.get("shortName"),
+                        ):
+                            if isinstance(candidate, str) and candidate.strip():
+                                contact["display_name"] = candidate.strip()
+                                break
+            except Exception as exc:
+                logger.warning(
+                    "Failed to fetch contact details for %s: %s", chat_id, exc
+                )
 
 
 def _log_session_status(event: dict) -> None:
@@ -209,6 +306,7 @@ async def process_event(
             return "unsupported"
 
         await _attach_media(payload, event, waha)
+        await _enrich_contact(payload, event, waha)
         result = await core.ingest(payload)
         if result is None:
             await waha.send_text(chat_id, settings.error_reply)

@@ -2,6 +2,7 @@ import { Menu, PanelLeftClose } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import { useHeaderContent } from "./HeaderContentContext"
 
 interface HeaderProps {
   showMenuToggle: boolean
@@ -26,6 +27,7 @@ export function Header({
 }: HeaderProps) {
   const { t } = useTranslation()
   const location = useLocation()
+  const { headerContent } = useHeaderContent()
   const titleKey =
     location.pathname === "/"
       ? "dashboard.title"
@@ -51,9 +53,13 @@ export function Header({
           )}
         </Button>
       )}
-      <h1 className="min-w-0 truncate text-sm font-semibold text-foreground md:text-base">
-        {t(titleKey)}
-      </h1>
+      {headerContent ? (
+        <div className="flex min-w-0 flex-1 items-center">{headerContent}</div>
+      ) : (
+        <h1 className="min-w-0 truncate text-sm font-semibold text-foreground md:text-base">
+          {t(titleKey)}
+        </h1>
+      )}
     </header>
   )
 }

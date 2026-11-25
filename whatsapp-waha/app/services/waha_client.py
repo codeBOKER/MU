@@ -1,7 +1,7 @@
 """Thin WAHA HTTP client — the only place that knows WAHA's REST shapes."""
 
 import logging
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin
 
 import httpx
 
@@ -81,6 +81,58 @@ class WahaClient:
         except Exception:
             return {}
         return data if isinstance(data, dict) else {}
+
+    async def _get(
+        self, path: str, params: dict | None = None
+    ) -> dict | list | str | None:
+        try:
+            response = await self.client.get(path, params=params)
+        except httpx.HTTPError as exc:
+            logger.warning("WAHA request GET %s failed: %s", path, exc)
+            return None
+        if response.status_code == 404:
+            return None
+        if response.status_code >= 400:
+            logger.warning(
+                "WAHA GET %s returned %s: %s",
+                path,
+                response.status_code,
+                self._error_message(response),
+            )
+            return None
+        try:
+            return response.json()
+        except Exception:
+            text = response.text.strip()
+            return text if text else None
+
+    async def get_lid_pn(self, lid: str) -> str | None:
+        """Resolve an @lid to its phone number JID (@c.us), or None."""
+        if not lid or not lid.lower().endswith("@lid"):
+            return None
+        encoded_lid = quote(lid, safe="")
+        data = await self._get(f"/api/{self.session}/lids/{encoded_lid}")
+        if isinstance(data, dict):
+            pn = data.get("pn") or data.get("phoneNumber") or data.get("id")
+            if isinstance(pn, str) and pn.strip():
+                return pn.strip()
+        elif isinstance(data, str) and data.strip():
+            return data.strip()
+        return None
+
+    async def get_contact(self, contact_id: str) -> dict | None:
+        """Fetch contact details from WAHA contacts API."""
+        if not contact_id:
+            return None
+        data = await self._get(
+            "/api/contacts",
+            params={"contactId": contact_id, "session": self.session},
+        )
+        if isinstance(data, dict):
+            return data
+        if isinstance(data, list) and data and isinstance(data[0], dict):
+            return data[0]
+        return None
 
     async def ensure_session(self, webhook_url: str, hmac_key: str) -> None:
         """Create + start the configured session if it does not exist yet.

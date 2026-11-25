@@ -5,6 +5,15 @@ import {
   useQueryClient,
 } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
+import {
+  getSampleContact,
+  listSampleContacts,
+  listSampleMemories,
+  listSampleMessages,
+  sendSampleMessage,
+  setSampleMode,
+  stubConversations,
+} from "@/lib/dev-sample-conversations"
 import type {
   ContactDetail,
   ContactListItem,
@@ -27,6 +36,7 @@ export function useContacts(
   return useQuery({
     queryKey: ["contacts", params],
     queryFn: async () => {
+      if (stubConversations) return listSampleContacts(params)
       const { data } = await apiClient.get<Paginated<ContactListItem>>(
         "/admin/contacts",
         { params }
@@ -42,6 +52,11 @@ export function useContact(contactId: string, options?: { poll?: boolean }) {
   return useQuery({
     queryKey: ["contacts", contactId],
     queryFn: async () => {
+      if (stubConversations) {
+        const sample = getSampleContact(contactId)
+        if (!sample) throw new Error(`Sample contact not found: ${contactId}`)
+        return sample
+      }
       const { data } = await apiClient.get<ContactDetail>(
         `/admin/contacts/${contactId}`
       )
@@ -59,6 +74,7 @@ export function useContactMessages(
   return useQuery({
     queryKey: ["contacts", contactId, "messages", params],
     queryFn: async () => {
+      if (stubConversations) return listSampleMessages(contactId, params)
       const { data } = await apiClient.get<Paginated<MessageItem>>(
         `/admin/contacts/${contactId}/messages`,
         { params }
@@ -74,6 +90,7 @@ export function useContactMemories(contactId: string) {
   return useQuery({
     queryKey: ["contacts", contactId, "memories"],
     queryFn: async () => {
+      if (stubConversations) return listSampleMemories(contactId)
       const { data } = await apiClient.get<{ items: MemoryItem[] }>(
         `/admin/contacts/${contactId}/memories`
       )
@@ -88,6 +105,7 @@ export function useSetMode(contactId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (mode: ConversationMode) => {
+      if (stubConversations) return setSampleMode(contactId, mode)
       const { data } = await apiClient.put<ModeResponse>(
         `/admin/contacts/${contactId}/mode`,
         { mode }
@@ -110,6 +128,11 @@ export function useSendOperatorMessage(contactId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (payload: OperatorMessagePayload) => {
+      if (stubConversations) {
+        const sample = sendSampleMessage(contactId, payload)
+        if (!sample) throw new Error(`Sample contact not found: ${contactId}`)
+        return sample
+      }
       const { data } = await apiClient.post<MessageItem>(
         `/admin/contacts/${contactId}/messages`,
         payload

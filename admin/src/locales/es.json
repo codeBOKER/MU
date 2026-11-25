@@ -174,6 +174,7 @@
   },
   "conversations": {
     "title": "Conversaciones",
+    "sampleData": "Datos de ejemplo",
     "subtitle": "Inspección de solo lectura del hilo de cada contacto.",
     "searchPlaceholder": "Buscar por nombre, teléfono o ID…",
     "empty": "Aún no hay contactos.",
@@ -271,7 +272,15 @@
     "humanOperator": "Operador humano",
     "macroGreeting": "¡Hola! ¿En qué puedo ayudarte hoy?",
     "macroWait": "Un momento por favor, estoy revisando esto.",
-    "macroResolved": "¡Me alegro de haber ayudado! Escríbenos cuando quieras."
+    "macroResolved": "¡Me alegro de haber ayudado! Escríbenos cuando quieras.",
+    "tips": {
+      "title": "¿Sabías que?",
+      "search": "Busca por nombre, teléfono o ID para ir directo al hilo de un cliente.",
+      "humanHandoff": "Cuando una conversación necesita a una persona, pulsa «Tomar conversación» para responder como operador; el bot se aparta hasta que lo reactives.",
+      "whatsappWindow": "La ventana de 24h de WhatsApp se controla por ti. Cuando cierra, el cliente debe escribir primero para que puedas responderle.",
+      "quickReplies": "Escribe «/» en el redactor para insertar una respuesta rápida y contestar preguntas frecuentes en un clic.",
+      "keyboard": "Enter envía tu respuesta; Shift + Enter añade una línea nueva."
+    }
   },
   "leads": {
     "title": "Leads",

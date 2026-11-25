@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import {
@@ -17,6 +17,7 @@ import {
 import type { ContactListItem } from "@/types/api"
 import { useContacts } from "@/hooks/useContacts"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -26,7 +27,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { channelIcon } from "@/components/shared/ChannelBadge"
 import { Pagination } from "@/components/shared/Pagination"
+import { stubConversations } from "@/lib/dev-sample-conversations"
 import { cn } from "@/lib/utils"
+import { useHeaderContent } from "@/components/layout/HeaderContentContext"
 import {
   formatRemaining,
   formatSampleTime,
@@ -46,6 +49,7 @@ export function ConversationListPanel({
   selectedContactId,
 }: ConversationListPanelProps) {
   const { t } = useTranslation()
+  const { setHeaderContent } = useHeaderContent()
   const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
@@ -71,27 +75,26 @@ export function ConversationListPanel({
 
   const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE))
 
-  const updateChannel = (ch: string | null) => {
-    const next = new URLSearchParams(searchParams)
-    if (ch) next.set("channel", ch)
-    else next.delete("channel")
-    setSearchParams(next)
-    setPage(1)
-  }
-
-  return (
-    <div className="flex h-full min-h-0 w-full min-w-0 flex-col bg-card">
-      {/* Top Header */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-base font-semibold text-foreground tracking-tight">
+  useEffect(() => {
+    setHeaderContent(
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <h1 className="truncate text-sm font-semibold tracking-tight text-foreground md:text-base">
             {t("conversations.title")}
-          </h2>
+          </h1>
+          {stubConversations && (
+            <Badge
+              variant="outline"
+              className="shrink-0 border-border bg-muted/60 font-medium text-muted-foreground"
+            >
+              {t("conversations.sampleData")}
+            </Badge>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
               >
                 <span>
                   {statusFilter === "open"
@@ -112,7 +115,7 @@ export function ConversationListPanel({
           </DropdownMenu>
         </div>
 
-        <div className="flex items-center gap-1 text-muted-foreground">
+        <div className="flex shrink-0 items-center gap-1 text-muted-foreground">
           <Button
             variant="ghost"
             size="sm"
@@ -139,7 +142,22 @@ export function ConversationListPanel({
           </Button>
         </div>
       </div>
+    )
 
+  }, [setHeaderContent, statusFilter, t])
+
+  useEffect(() => () => setHeaderContent(null), [setHeaderContent])
+
+  const updateChannel = (ch: string | null) => {
+    const next = new URLSearchParams(searchParams)
+    if (ch) next.set("channel", ch)
+    else next.delete("channel")
+    setSearchParams(next)
+    setPage(1)
+  }
+
+  return (
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col bg-card">
       {/* Tabs Row: Mine · Unassigned · All */}
       <div className="flex border-b border-border px-3 text-xs">
         <button
@@ -261,7 +279,7 @@ export function ConversationListPanel({
           "min-h-0 flex-1 overflow-y-auto",
           selectedContactId
             ? "space-y-1 px-2 py-1"
-            : "grid content-start grid-cols-1 gap-2 px-4 py-3 md:grid-cols-2 2xl:grid-cols-3"
+            : "grid content-start grid-cols-1 gap-2 px-4 py-3 md:grid-cols-2 lg:grid-cols-1"
         )}
       >
         {isLoading ? (

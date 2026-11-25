@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Outlet, useLocation } from "react-router-dom"
 import { Sidebar } from "./Sidebar"
 import { Header } from "./Header"
+import { HeaderContentProvider } from "./HeaderContentContext"
 import { cn } from "@/lib/utils"
 
 interface ViewportMode {
@@ -52,31 +53,33 @@ export function AdminLayout() {
   }
 
   return (
-    <div className="flex h-dvh min-w-0 overflow-hidden">
-      <Sidebar
-        expanded={sidebarExpanded}
-        mobile={viewport.mobile}
-        open={sidebarExpanded}
-        hoverEnabled={!viewport.touch && !viewport.mobile}
-        onExpand={() => setSidebarExpanded(true)}
-        onCollapse={() => setSidebarExpanded(false)}
-        onNavigate={closeMobileSidebar}
-      />
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <Header
-          showMenuToggle={viewport.mobile || viewport.touch}
-          sidebarExpanded={sidebarExpanded}
-          onToggleSidebar={handleSidebarToggle}
+    <HeaderContentProvider>
+      <div className="flex h-dvh min-w-0 overflow-hidden">
+        <Sidebar
+          expanded={sidebarExpanded}
+          mobile={viewport.mobile}
+          open={sidebarExpanded}
+          hoverEnabled={!viewport.touch && !viewport.mobile}
+          onExpand={() => setSidebarExpanded(true)}
+          onCollapse={() => setSidebarExpanded(false)}
+          onNavigate={closeMobileSidebar}
         />
-        <main
-          className={cn(
-            "min-h-0 min-w-0 flex-1 bg-background",
-            isConversations ? "overflow-hidden p-0" : "overflow-auto p-4 md:p-6"
-          )}
-        >
-          <Outlet />
-        </main>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <Header
+            showMenuToggle={viewport.mobile || viewport.touch}
+            sidebarExpanded={sidebarExpanded}
+            onToggleSidebar={handleSidebarToggle}
+          />
+          <main
+            className={cn(
+              "min-h-0 min-w-0 flex-1 bg-background",
+              isConversations ? "overflow-hidden p-0" : "overflow-auto p-4 md:p-6"
+            )}
+          >
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </HeaderContentProvider>
   )
 }

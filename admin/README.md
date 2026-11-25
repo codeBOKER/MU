@@ -39,7 +39,9 @@ npm run auth:on          # clears those keys, login is required again
 ```
 
 The command only touches `admin/.env.local` (gitignored); the core keeps its
-normal JWT checks. Refresh the browser after toggling.
+normal JWT checks. Refresh the browser after toggling. While it is enabled, the
+conversations inbox (list, threads, handoff and replies) uses local sample data
+instead of the backend — nothing is fetched from `/admin/contacts`.
 
 ## i18n
 

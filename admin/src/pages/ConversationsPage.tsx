@@ -5,6 +5,7 @@ import { useContact } from "@/hooks/useContacts"
 import { ConversationListPanel } from "@/components/conversations/ConversationListPanel"
 import { ConversationThread } from "@/components/conversations/ConversationThread"
 import { ContactDetailsSidebar } from "@/components/conversations/ContactDetailsSidebar"
+import { ConversationTip } from "@/components/conversations/ConversationTip"
 import { cn } from "@/lib/utils"
 
 export function ConversationsPage() {
@@ -24,13 +25,13 @@ export function ConversationsPage() {
           "h-full min-h-0 shrink-0 overflow-hidden transition-[width,flex] duration-300 ease-in-out motion-reduce:transition-none",
           hasSelection
             ? "hidden lg:flex lg:w-[350px] lg:flex-none lg:border-r lg:border-border xl:w-[380px]"
-            : "flex min-w-0 flex-1"
+            : "flex w-full min-w-0 flex-none lg:w-[350px] lg:border-r lg:border-border xl:w-[380px]"
         )}
       >
         <ConversationListPanel selectedContactId={contactId} />
       </div>
 
-      {hasSelection && (
+      {hasSelection ? (
         <div className="flex h-full min-h-0 min-w-0 flex-1 overflow-hidden">
           {isLoading ? (
             <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
@@ -60,6 +61,10 @@ export function ConversationsPage() {
               {t("conversations.noMessages")}
             </div>
           )}
+        </div>
+      ) : (
+        <div className="hidden h-full min-h-0 min-w-0 flex-1 overflow-hidden lg:flex">
+          <ConversationTip />
         </div>
       )}
     </div>
